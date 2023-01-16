@@ -2,25 +2,26 @@
 
 # This ZSH plugin reads the text from the current buffer 
 # and uses a Python script to complete the text.
- 
 
 create_completion() {
-    # Get the text typed until now.
-    text=${BUFFER}
-    #echo $cursor_line $cursor_col
-    completion=$(echo -n "$text" | $ZSH_CUSTOM/plugins/zsh_codex/create_completion.py $CURSOR)
-    text_before_cursor=${text:0:$CURSOR}
-    text_after_cursor=${text:$CURSOR}
-    # Add completion to the current buffer.
-    #BUFFER="${text}${completion}"
-    BUFFER="${text_before_cursor}${completion}${text_after_cursor}"
-    prefix_and_completion="${text_before_cursor}${completion}"
-    # Put the cursor at the end of the completion
-    CURSOR=${#prefix_and_completion}
+    # Show loading message in green
+    printf '%s' "Loading... "
+    completion=$(cat $TERMINAL_TEXT | ansi2txt | col -b | $ZSH_CUSTOM/plugins/zsh_codex/create_completion.py)
+    BUFFER=${completion}
+    CURSOR=${#completion}
 }
 
-# Bind the create_completion function to a key.
+
+# Bind the create_completion function to a key. Pass TERMINAL_TEXT as an argument.
 zle -N create_completion
 
+# Exit immediately if $TERMINAL_TEXT is set.
+[[ -n $TERMINAL_TEXT ]] && return
 
+# Create temporary file to store the terminal text
+export TERMINAL_TEXT=$(mktemp)
 
+# Run script -f output to the temporary file
+script -f $TERMINAL_TEXT -c "zsh"
+ 
+exit 0
